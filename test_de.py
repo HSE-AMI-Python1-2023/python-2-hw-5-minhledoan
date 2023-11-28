@@ -3,7 +3,6 @@ import numpy as np
 from differential_evolution import DifferentialEvolution
 import json
 
-
 def rastrigin(array, A=10):
     return A * 2 + (array[0] ** 2 - A * np.cos(2 * np.pi * array[0])) + (array[1] ** 2 - A * np.cos(2 * np.pi * array[1]))
 
@@ -25,8 +24,7 @@ def test_info_coverage_json(de_solver):
 
     file = open(filename, "r")
     data = json.loads(file.read())
-    assert data['totals']['percent_covered'] == pytest.approx(100.0, abs=1e-2)
-
+    assert data['totals']['percent_covered'] == 100
 
 def test_best_solution_found(de_solver):
     de_solver._init_population()
