@@ -83,7 +83,7 @@ def test_recombination():
     assert np.all((trial >= 0) & (trial <= 1))
     # Add more assertions based on your recombination logic
 
-# Update the test_evaluate function
+# Update test_evaluate
 def test_evaluate():
     de_solver = DifferentialEvolution(FOBJ, BOUNDS)
     de_solver._init_population()
@@ -93,5 +93,6 @@ def test_evaluate():
     result_of_evolution = FOBJ(de_solver.trial_denorm)
     de_solver._evaluate(result_of_evolution, 0)
     assert result_of_evolution == de_solver.fitness[0]
+
 if __name__ == "__main__":
     pytest.main()

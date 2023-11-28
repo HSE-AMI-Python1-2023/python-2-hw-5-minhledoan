@@ -102,7 +102,8 @@ class DifferentialEvolution:
         return np.random.choice(self.idxs, size, replace=False)
 
     def _mutation(self):
-        self.a, self.b, self.c = self.population[self._random_indices(3)]
+        indices = self._random_indices(3)
+        self.a, self.b, self.c = self.population[indices[0]], self.population[indices[1]], self.population[indices[2]]
         self.mutant = np.clip(self.a + self.mutation_coefficient * (self.b - self.c), 0, 1)
         return self.mutant
     
