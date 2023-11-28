@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class DifferentialEvolution:
     def __init__(self, fobj, bounds, mutation_coefficient=0.8, crossover_coefficient=0.7, population_size=20):
 
@@ -35,12 +36,12 @@ class DifferentialEvolution:
 
         self.best_idx = np.argmin(self.fitness)
         self.best = self.population_denorm[self.best_idx]
-    
+
     def _mutation(self):
-        self.a, self.b, self.c = self.population[np.random.choice(self.idxs, 3, replace = False)]
+        self.a, self.b, self.c = self.population[np.random.choice(self.idxs, 3, replace=False)]
         self.mutant = np.clip(self.a + self.mutation_coefficient * (self.b - self.c), 0, 1)
         return self.mutant
-    
+
     def _crossover(self):
         cross_points = np.random.rand(self.dimensions) < self.crossover_coefficient
         if not np.any(cross_points):
@@ -52,17 +53,17 @@ class DifferentialEvolution:
         trial = np.where(self.cross_points, self.mutant, self.population[population_index])
         trial_denorm = self.min_bound + trial * self.diff
         return trial, trial_denorm
-    
+
     def _evaluate(self, result_of_evolution, population_index):
         if result_of_evolution < self.fitness[population_index]:
-                self.fitness[population_index] = result_of_evolution
-                self.population[population_index] = self.trial
-                if result_of_evolution < self.fitness[self.best_idx]:
-                    self.best_idx = population_index
-                    self.best = self.trial_denorm
+            self.fitness[population_index] = result_of_evolution
+            self.population[population_index] = self.trial
+            if result_of_evolution < self.fitness[self.best_idx]:
+                self.best_idx = population_index
+                self.best = self.trial_denorm
 
     def iterate(self):
-    
+
         for population_index in range(self.population_size):
             self.idxs = [idx for idx in range(self.population_size) if idx != population_index]
 
@@ -70,7 +71,7 @@ class DifferentialEvolution:
             self.cross_points = self._crossover()
 
             self.trial, self.trial_denorm = self._recombination(population_index)
-    
+
             result_of_evolution = self.fobj(self.trial_denorm)
 
             self._evaluate(result_of_evolution, population_index)

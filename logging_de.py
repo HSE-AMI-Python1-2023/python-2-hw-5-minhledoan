@@ -98,8 +98,11 @@ class DifferentialEvolution:
         self.best_idx = np.argmin(self.fitness)
         self.best = self.population_denorm[self.best_idx]
     
+    def _random_indices(self, size):
+        return np.random.choice(self.idxs, size, replace=False)
+
     def _mutation(self):
-        self.a, self.b, self.c = self.population[np.random.choice(self.idxs, 3, replace = False)]
+        self.a, self.b, self.c = self.population[self._random_indices(3)]
         self.mutant = np.clip(self.a + self.mutation_coefficient * (self.b - self.c), 0, 1)
         return self.mutant
     

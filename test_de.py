@@ -73,6 +73,25 @@ def test_iterate():
     # Add assertions based on the expected behavior of the iterate method
 
 # Add more test cases as needed
+def test_recombination():
+    de_solver = DifferentialEvolution(FOBJ, BOUNDS)
+    de_solver._init_population()
+    de_solver._mutation()
+    de_solver._crossover()
+    trial, trial_denorm = de_solver._recombination(0)
+    assert trial.shape == (2,)
+    assert np.all((trial >= 0) & (trial <= 1))
+    # Add more assertions based on your recombination logic
 
+# Update the test_evaluate function
+def test_evaluate():
+    de_solver = DifferentialEvolution(FOBJ, BOUNDS)
+    de_solver._init_population()
+    de_solver._mutation()
+    de_solver._crossover()
+    de_solver._recombination(0)
+    result_of_evolution = FOBJ(de_solver.trial_denorm)
+    de_solver._evaluate(result_of_evolution, 0)
+    assert result_of_evolution == de_solver.fitness[0]
 if __name__ == "__main__":
     pytest.main()
