@@ -1,75 +1,138 @@
-import pytest
+import logging
 import numpy as np
-from differential_evolution import DifferentialEvolution
+from logging.handlers import RotatingFileHandler
 
-def rastrigin(array, A=10):
-    return A * 2 + (array[0] ** 2 - A * np.cos(2 * np.pi * array[0])) + (array[1] ** 2 - A * np.cos(2 * np.pi * array[1]))
+def setup_logging():
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-BOUNDS = np.array([[-20, 20], [-20, 20]])
-FOBJ = rastrigin
+    logger = logging.getLogger('Normal_logger')
+    logger.setLevel(logging.INFO)
+    file_handler = RotatingFileHandler('logging_de.log', mode='w')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
 
-@pytest.fixture
-def de_solver():
-    return DifferentialEvolution(FOBJ, BOUNDS)
+    error_logger = logging.getLogger('Error_logger')
+    error_logger.setLevel(logging.ERROR)
+    error_file_handler = RotatingFileHandler('errors.log', mode='w')
+    error_file_handler.setFormatter(formatter)
+    error_logger.addHandler(error_file_handler)
 
-def test_initialization(de_solver):
-    assert de_solver.population_size > 0
-    assert de_solver.dimensions == len(BOUNDS)
+class DifferentialEvolution:
+    def __init__(self, fobj, bounds, mutation_coefficient=0.8, crossover_coefficient=0.7, population_size=20):
 
-def test_init_population(de_solver):
-    de_solver._init_population()
-    assert de_solver.population.shape == (de_solver.population_size, de_solver.dimensions)
-    assert np.all((de_solver.population >= 0) & (de_solver.population <= 1))
+        self.fobj = fobj
+        self.bounds = bounds
+        self.mutation_coefficient = mutation_coefficient
+        self.crossover_coefficient = crossover_coefficient
+        self.population_size = population_size
+        self.dimensions = len(self.bounds)
 
-def test_mutation(de_solver):
-    de_solver._init_population()
-    for idx in range(de_solver.population_size):
-        de_solver.idxs = [i for i in range(de_solver.population_size) if i != idx]
-        mutant = de_solver._mutation()
-        assert len(mutant) == de_solver.dimensions
-        assert np.all((mutant >= 0) & (mutant <= 1))
-        # Add more mutation tests as needed
+        self.a = None
+        self.b = None
+        self.c = None
+        self.mutant = None
+        self.population = None
+        self.idxs = None
+        self.fitness = []
+        self.min_bound = None
+        self.max_bound = None
+        self.diff = None
+        self.population_denorm = None
+        self.best_idx = None
+        self.best = None
+        self.cross_points = None
 
-def test_crossover(de_solver):
-    de_solver._init_population()
-    de_solver.idxs = list(range(de_solver.population_size))
-    de_solver._mutation()
-    cross_points = de_solver._crossover()
-    assert len(cross_points) == de_solver.dimensions
-    assert np.all(np.logical_or(cross_points, ~cross_points))
-    # Add more crossover tests as needed
+    def _init_population(self):
+        self.population = np.random.rand(self.population_size, self.dimensions)
+        self.min_bound, self.max_bound = self.bounds.T
 
-def test_recombination_and_evaluation(de_solver):
-    de_solver._init_population()
-    for idx in range(de_solver.population_size):
-        de_solver.idxs = [i for i in range(de_solver.population_size) if i != idx]
-        de_solver._mutation()
-        de_solver._crossover()
-        trial, trial_denorm = de_solver._recombination(idx)
-        assert len(trial) == de_solver.dimensions
-        assert np.all((trial >= 0) & (trial <= 1))
-        # Add more recombination tests as needed
-        de_solver._evaluate(rastrigin(trial_denorm), idx)
-        # Add more evaluation tests as needed
+        self.diff = np.fabs(self.min_bound - self.max_bound)
+        self.population_denorm = self.min_bound + self.population * self.diff
+        self.fitness = np.asarray([self.fobj(ind) for ind in self.population_denorm])
 
-def test_iteration(de_solver):
-    de_solver._init_population()
-    initial_best = de_solver.best
-    de_solver.iterate()
-    assert de_solver.best is not None
-    assert np.any(de_solver.best != initial_best)
-    # Add more iteration tests as needed
+        self.best_idx = np.argmin(self.fitness)
+        self.best = self.population_denorm[self.best_idx]
 
-def test_logging_info(de_solver, caplog):
-    de_solver._init_population()
-    de_solver.iterate()
-    # Check if info message is logged
-    assert "Инициализируем популяцию" in caplog.text
+    def _mutation(self):
+        self.a, self.b, self.c = self.population[np.random.choice(self.idxs, 3, replace=False)]
+        self.mutant = np.clip(self.a + self.mutation_coefficient * (self.b - self.c), 0, 1)
+        return self.mutant
 
-def test_logging_error(de_solver, caplog):
-    de_solver._init_population()
-    # Intentionally set a fitness value exceeding 1e-3 to trigger the error_logger
-    de_solver.fitness[0] = 1e-2
-    de_solver._evaluate(1e-2, 0)
-    # Check if error message is logged
-    assert "Результат: 0.01, превышает 1e-3" in caplog.text
+    def _crossover(self):
+        cross_points = np.random.rand(self.dimensions) < self.crossover_coefficient
+        if not np.any(cross_points):
+            cross_points[np.random.randint(0, self.dimensions)] = True
+        return cross_points
+
+    def _recombination(self, population_index):
+
+        trial = np.where(self.cross_points, self.mutant, self.population[population_index])
+        trial_denorm = self.min_bound + trial * self.diff
+        return trial, trial_denorm
+
+    def _evaluate(self, result_of_evolution, population_index):
+        if result_of_evolution < self.fitness[population_index]:
+            self.fitness[population_index] = result_of_evolution
+            self.population[population_index] = self.trial
+            if result_of_evolution < self.fitness[self.best_idx]:
+                self.best_idx = population_index
+                self.best = self.trial_denorm
+
+    def iterate(self):
+
+        for population_index in range(self.population_size):
+            self.idxs = [idx for idx in range(self.population_size) if idx != population_index]
+
+            self.mutant = self._mutation()
+            self.cross_points = self._crossover()
+
+            self.trial, self.trial_denorm = self._recombination(population_index)
+
+            result_of_evolution = self.fobj(self.trial_denorm)
+
+            self._evaluate(result_of_evolution, population_index)
+
+
+    def rastrigin(array, A=10):
+        return A * 2 + (array[0] ** 2 - A * np.cos(2 * np.pi * array[0])) + (
+                array[1] ** 2 - A * np.cos(2 * np.pi * array[1]))
+
+    def _evaluate(self, result_of_evolution, population_index):
+        if result_of_evolution > 1e-3:
+            formatted_bounds = format_bounds(self.bounds)
+            error_logger.error(
+                f"Result: {result_of_evolution} exceeds 1e-3. \nParameters: population size {self.population_size}, "
+                f"bounds {formatted_bounds}, mutation coefficient {self.mutation_coefficient}, "
+                f"crossover coefficient {self.crossover_coefficient}")
+            if result_of_evolution > 1e-1:
+                error_logger.critical(
+                    f"Result: {result_of_evolution} exceeds 1e-1. \nParameters: population size {self.population_size}, "
+                    f"bounds {formatted_bounds}, mutation coefficient {self.mutation_coefficient}, "
+                    f"crossover coefficient {self.crossover_coefficient}")
+
+    # ... (unchanged)
+
+if __name__ == "__main__":
+    setup_logging()
+    function_obj = rastrigin
+    bounds_array = np.array([[-20, 20], [-20, 20]]), np.array([[-10, 50], [-10, 60]]), np.array([[-0, 110], [-42, 32]])
+    steps_array = [40, 100, 200]
+    mutation_coefficient_array = [0.5, 0.6, 0.3]
+    crossover_coefficient_array = [0.5, 0.6, 0.3]
+    population_size_array = [20, 30, 40, 50, 60]
+
+    for bounds in bounds_array:
+        for steps in steps_array:
+            for mutation_coefficient in mutation_coefficient_array:
+                for crossover_coefficient in crossover_coefficient_array:
+                    for population_size in population_size_array:
+
+                        de_solver = DifferentialEvolution(function_obj, bounds,
+                                                          mutation_coefficient=mutation_coefficient,
+                                                          crossover_coefficient=crossover_coefficient,
+                                                          population_size=population_size)
+
+                        de_solver._init_population()
+
+                        for _ in range(steps):
+                            de_solver.iterate()
