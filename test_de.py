@@ -13,6 +13,7 @@ FOBJ = rastrigin
 def de_solver():
     return DifferentialEvolution(FOBJ, BOUNDS)
 
+
 def test_info_coverage_json(de_solver):
     de_solver._init_population()
     filename = 'coverage.json'
@@ -22,9 +23,11 @@ def test_info_coverage_json(de_solver):
     de_solver._crossover()
     trial, trial_denorm = de_solver._recombination(de_solver.best_idx)
 
-    file = open(filename, "r")
-    data = json.loads(file.read())
-    assert data['totals']['percent_covered'] == 100
+    with open(filename, "r") as file:
+        data = json.loads(file.read())
+
+    coverage_percentage = data['totals']['percent_covered']
+    assert coverage_percentage >= 100, f"Coverage is {coverage_percentage}%, expected at least 100%"
 
 def test_best_solution_found(de_solver):
     de_solver._init_population()
