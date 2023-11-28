@@ -1,4 +1,5 @@
 import logging 
+import datetime
 
 
 
@@ -25,6 +26,28 @@ import logging
 
 import numpy as np
 
+class CustomFormatter(logging.Formatter):
+    def format(self, record):
+        log_time = datetime.datetime.fromtimestamp(record.created).strftime('%Y-%m-%d %H:%M:%S')
+        log_msg = f"{log_time} - {record.name} - {record.levelname} - {record.msg}"
+        return log_msg
+
+# Создаем свой логгер
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+# Создаем обработчики для файлов
+file_handler = logging.FileHandler('logging_de.log')
+file_handler.setLevel(logging.DEBUG)
+file_handler.setFormatter(CustomFormatter())
+
+errors_file_handler = logging.FileHandler('errors.log')
+errors_file_handler.setLevel(logging.ERROR)
+errors_file_handler.setFormatter(CustomFormatter())
+
+# Добавляем обработчики к логгеру
+logger.addHandler(file_handler)
+logger.addHandler(errors_file_handler)
 class DifferentialEvolution:
     def __init__(self, fobj, bounds, mutation_coefficient=0.8, crossover_coefficient=0.7, population_size=20):
 
@@ -124,5 +147,12 @@ if __name__ == "__main__":
 
                         de_solver._init_population()
 
+                        logger.info(f"Bounds: {bounds}, Steps: {steps}, Mutation Coefficient: {mutation_coefficient}, Crossover Coefficient: {crossover_coefficient}, Population Size: {population_size}")
+
                         for _ in range(steps):
                             de_solver.iterate()
+
+                        if np.any(de_solver.fitness > 1e-3):
+                            logger.error(f"Result greater than 1e-3: {de_solver.fitness}")
+                        elif np.any(de_solver.fitness > 1e-1):
+                            logger.critical(f"Result greater than 1e-1: {de_solver.fitness}")
