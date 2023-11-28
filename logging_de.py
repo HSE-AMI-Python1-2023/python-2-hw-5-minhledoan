@@ -32,22 +32,36 @@ class CustomFormatter(logging.Formatter):
         log_msg = f"{log_time} - {record.name} - {record.levelname} - {record.msg}"
         return log_msg
 
-# Создаем свой логгер
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# Custom Logger
+class DELogger:
+    def __init__(self):
+        self.logger = logging.getLogger("DifferentialEvolution")
+        self.logger.setLevel(logging.DEBUG)
 
-# Создаем обработчики для файлов
-file_handler = logging.FileHandler('logging_de.log')
-file_handler.setLevel(logging.DEBUG)
-file_handler.setFormatter(CustomFormatter())
+        # Create a handler for general logs
+        file_handler = logging.FileHandler('logging_de.log')
+        file_handler.setLevel(logging.DEBUG)
+        file_handler.setFormatter(CustomFormatter())
+        self.logger.addHandler(file_handler)
 
-errors_file_handler = logging.FileHandler('errors.log')
-errors_file_handler.setLevel(logging.ERROR)
-errors_file_handler.setFormatter(CustomFormatter())
+        # Create a handler for error and critical logs
+        errors_file_handler = logging.FileHandler('errors.log')
+        errors_file_handler.setLevel(logging.ERROR)
+        errors_file_handler.setFormatter(CustomFormatter())
+        self.logger.addHandler(errors_file_handler)
 
-# Добавляем обработчики к логгеру
-logger.addHandler(file_handler)
-logger.addHandler(errors_file_handler)
+    def log_start(self, bounds, steps, mutation_coefficient, crossover_coefficient, population_size):
+        self.logger.info(f"Algorithm started with parameters: Bounds={bounds}, Steps={steps}, Mutation Coefficient={mutation_coefficient}, Crossover Coefficient={crossover_coefficient}, Population Size={population_size}")
+
+    def log_iteration(self, iteration_number, result_of_evolution):
+        self.logger.debug(f"Iteration {iteration_number}: Result={result_of_evolution}")
+
+    def log_error(self, result_of_evolution):
+        if result_of_evolution > 1e-3:
+            self.logger.error(f"Error result: {result_of_evolution}")
+        elif result_of_evolution > 1e-1:
+            self.logger.critical(f"Critical result: {result_of_evolution}")
+
 class DifferentialEvolution:
     def __init__(self, fobj, bounds, mutation_coefficient=0.8, crossover_coefficient=0.7, population_size=20):
 
@@ -129,13 +143,14 @@ def rastrigin(array, A=10):
 
 
 if __name__ == "__main__":
-
     function_obj = rastrigin
     bounds_array = np.array([[-20, 20], [-20, 20]]), np.array([[-10, 50], [-10, 60]]), np.array([[-0, 110], [-42, 32]])
     steps_array = [40, 100, 200]
     mutation_coefficient_array = [0.5, 0.6, 0.3]
     crossover_coefficient_array = [0.5, 0.6, 0.3]
     population_size_array = [20, 30, 40, 50, 60]
+
+    logger = DELogger()
 
     for bounds in bounds_array:
         for steps in steps_array:
@@ -147,12 +162,10 @@ if __name__ == "__main__":
 
                         de_solver._init_population()
 
-                        logger.info(f"Bounds: {bounds}, Steps: {steps}, Mutation Coefficient: {mutation_coefficient}, Crossover Coefficient: {crossover_coefficient}, Population Size: {population_size}")
+                        logger.log_start(bounds, steps, mutation_coefficient, crossover_coefficient, population_size)
 
-                        for _ in range(steps):
+                        for iteration in range(steps):
                             de_solver.iterate()
+                            logger.log_iteration(iteration + 1, de_solver.fitness[de_solver.best_idx])
 
-                        if np.any(de_solver.fitness > 1e-3):
-                            logger.error(f"Result greater than 1e-3: {de_solver.fitness}")
-                        elif np.any(de_solver.fitness > 1e-1):
-                            logger.critical(f"Result greater than 1e-1: {de_solver.fitness}")
+                        logger.log_error(de_solver.fitness[de_solver.best_idx])
