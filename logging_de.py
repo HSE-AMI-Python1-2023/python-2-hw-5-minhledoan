@@ -3,20 +3,27 @@ import numpy as np
 from logging.handlers import RotatingFileHandler
 
 
-def setup_logging():
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+def format_bounds(bounds):
+    bounds_str = "["
+    for row in bounds:
+        bounds_str += "[" + " ".join(map(str, row)) + "] "
+    return bounds_str.strip() + "]"
 
-    logger = logging.getLogger('Normal_logger')
-    logger.setLevel(logging.INFO)
-    file_handler = RotatingFileHandler('logging_de.log', mode='w')
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
 
-    error_logger = logging.getLogger('Error_logger')
-    error_logger.setLevel(logging.ERROR)
-    error_file_handler = RotatingFileHandler('errors.log', mode='w')
-    error_file_handler.setFormatter(formatter)
-    error_logger.addHandler(error_file_handler)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+logger = logging.getLogger('Normal_logger')
+logger.setLevel(logging.INFO)
+file_handler = RotatingFileHandler('logging_de.log', mode='w')
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+
+error_logger = logging.getLogger('Error_logger')
+error_logger.setLevel(logging.ERROR)
+error_file_handler = RotatingFileHandler('errors.log', mode='w')
+error_file_handler.setFormatter(formatter)
+error_logger.addHandler(error_file_handler)
+
 
 class DifferentialEvolution:
     def __init__(self, fobj, bounds, mutation_coefficient=0.8, crossover_coefficient=0.7, population_size=20):
@@ -72,17 +79,19 @@ class DifferentialEvolution:
         return trial, trial_denorm
 
     def _evaluate(self, result_of_evolution, population_index):
-        if result_of_evolution > 1e-3:
-            formatted_bounds = format_bounds(self.bounds)
-            error_logger.error(
-                f"Result: {result_of_evolution} exceeds 1e-3. \nParameters: population size {self.population_size}, "
-                f"bounds {formatted_bounds}, mutation coefficient {self.mutation_coefficient}, "
-                f"crossover coefficient {self.crossover_coefficient}")
-            if result_of_evolution > 1e-1:
-                error_logger.critical(
-                    f"Result: {result_of_evolution} exceeds 1e-1. \nParameters: population size {self.population_size}, "
-                    f"bounds {formatted_bounds}, mutation coefficient {self.mutation_coefficient}, "
-                    f"crossover coefficient {self.crossover_coefficient}")
+        if result_of_evolution < self.fitness[population_index]:
+            self.fitness[population_index] = result_of_evolution
+            self.population[population_index] = self.trial
+            if result_of_evolution < self.fitness[self.best_idx]:
+                self.best_idx = population_index
+                self.best = self.trial_denorm
+            if result_of_evolution > 1e-3:
+                formatted_bounds = format_bounds(self.bounds)
+                error_logger.error(
+                    f"Результат: {result_of_evolution}, превышает 1e-3. \nИспользуемые параметры: размер популяции {self.population_size}, границы {formatted_bounds}, коэффициент мутации {self.mutation_coefficient}, коэффициент скрещивания {self.crossover_coefficient}")
+                if result_of_evolution > 1e-1:
+                    error_logger.critical(
+                        f"Результат: {result_of_evolution}, превышает 1e-1. \nИспользуемые параметры: размер популяции {self.population_size}, границы {formatted_bounds}, коэффициент мутации {self.mutation_coefficient}, коэффициент скрещивания {self.crossover_coefficient}")
 
     def iterate(self):
 
@@ -105,10 +114,9 @@ def rastrigin(array, A=10):
 
 
 if __name__ == "__main__":
-    setup_logging()
 
     function_obj = rastrigin
-    bounds_array = np.array([[-20, 20], [-20, 20]]), np.array([[-10, 50], [-10, 60]]), np.array([[-0, 110], [-42, 32]])
+    bounds_array = np.array([[[-20, 20], [-20, 20]], [[-10, 50], [-10, 60]], [[0, 110], [-42, 32]]])
     steps_array = [40, 100, 200]
     mutation_coefficient_array = [0.5, 0.6, 0.3]
     crossover_coefficient_array = [0.5, 0.6, 0.3]
@@ -126,6 +134,12 @@ if __name__ == "__main__":
                                                           population_size=population_size)
 
                         de_solver._init_population()
-
+                        formatted_bounds = format_bounds(bounds)
+                        logger.info(
+                            f"Инициализируем популяцию с размером: {population_size}, Границы: {formatted_bounds}, \n"
+                            f"Коэффициент мутации: {mutation_coefficient}, \n"
+                            f"Коэффициент скрещивания: {crossover_coefficient}, Количество итераций: {steps}, \n"
+                            f"Начальная популяция: {de_solver.population_denorm}"
+                        )
                         for _ in range(steps):
                             de_solver.iterate()
