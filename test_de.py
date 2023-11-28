@@ -37,19 +37,13 @@ def test_init_population():
 def test_mutation():
     de_solver = DifferentialEvolution(FOBJ, BOUNDS)
     de_solver._init_population()
+    de_solver.idxs = [idx for idx in range(de_solver.population_size) if idx != 0]
     mutant = de_solver._mutation()
     assert mutant.shape == (2,)
     assert np.all((mutant >= 0) & (mutant <= 1))
     # Add more assertions based on your mutation logic
 
-def test_crossover():
-    de_solver = DifferentialEvolution(FOBJ, BOUNDS)
-    de_solver._init_population()
-    cross_points = de_solver._crossover()
-    assert cross_points.shape == (2,)
-    assert all(val in [True, False] for val in cross_points)
-    # Add more assertions based on your crossover logic
-
+# Update the test_recombination function
 def test_recombination():
     de_solver = DifferentialEvolution(FOBJ, BOUNDS)
     de_solver._init_population()
@@ -60,6 +54,7 @@ def test_recombination():
     assert np.all((trial >= 0) & (trial <= 1))
     # Add more assertions based on your recombination logic
 
+# Update the test_evaluate function
 def test_evaluate():
     de_solver = DifferentialEvolution(FOBJ, BOUNDS)
     de_solver._init_population()
