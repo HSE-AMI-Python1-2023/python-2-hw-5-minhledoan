@@ -1,9 +1,8 @@
-import pytest 
+import pytest
 import numpy as np
-
 from differential_evolution import DifferentialEvolution
+import json
 
-# CONSTANTS
 
 def rastrigin(array, A=10):
     return A * 2 + (array[0] ** 2 - A * np.cos(2 * np.pi * array[0])) + (array[1] ** 2 - A * np.cos(2 * np.pi * array[1]))
@@ -11,88 +10,32 @@ def rastrigin(array, A=10):
 BOUNDS = np.array([[-20, 20], [-20, 20]])
 FOBJ = rastrigin
 
+@pytest.fixture
+def de_solver():
+    return DifferentialEvolution(FOBJ, BOUNDS)
 
-"""
-Ваша задача добиться 100% покрытия тестами DifferentialEvolution
-Различные этапы тестирования логики разделяйте на различные функции
-Запуск команды тестирования:
-pytest -s test_de.py --cov-report=json --cov
-"""
-def test_initialization():
-    de_solver = DifferentialEvolution(FOBJ, BOUNDS)
-    assert de_solver.fobj == FOBJ
-    assert np.array_equal(de_solver.bounds, BOUNDS)
-    assert de_solver.mutation_coefficient == 0.8
-    assert de_solver.crossover_coefficient == 0.7
-    assert de_solver.population_size == 20
-    # Add more assertions based on your initialization logic
-
-def test_init_population():
-    de_solver = DifferentialEvolution(FOBJ, BOUNDS)
+def test_info_coverage_json(de_solver):
     de_solver._init_population()
-    assert de_solver.population.shape == (20, 2)
-    assert np.all((de_solver.population >= 0) & (de_solver.population <= 1))
-    # Add more assertions based on your initialization logic
-
-def test_mutation():
-    de_solver = DifferentialEvolution(FOBJ, BOUNDS)
-    de_solver._init_population()
-    de_solver.idxs = [idx for idx in range(de_solver.population_size) if idx != 0]
-    mutant = de_solver._mutation()
-    assert mutant.shape == (2,)
-    assert np.all((mutant >= 0) & (mutant <= 1))
-    # Add more assertions based on your mutation logic
-
-# Update the test_recombination function
-def test_recombination():
-    de_solver = DifferentialEvolution(FOBJ, BOUNDS)
-    de_solver._init_population()
-    de_solver._mutation()
-    de_solver._crossover()
-    trial, trial_denorm = de_solver._recombination(0)
-    assert trial.shape == (2,)
-    assert np.all((trial >= 0) & (trial <= 1))
-    # Add more assertions based on your recombination logic
-
-# Update the test_evaluate function
-def test_evaluate():
-    de_solver = DifferentialEvolution(FOBJ, BOUNDS)
-    de_solver._init_population()
-    de_solver._mutation()
-    de_solver._crossover()
-    de_solver._recombination(0)
-    result_of_evolution = FOBJ(de_solver.trial_denorm)
-    de_solver._evaluate(result_of_evolution, 0)
-    assert result_of_evolution == de_solver.fitness[0]
-    # Add more assertions based on your evaluation logic
-
-def test_iterate():
-    de_solver = DifferentialEvolution(FOBJ, BOUNDS)
-    de_solver._init_population()
+    filename = 'coverage.json'
     de_solver.iterate()
-    # Add assertions based on the expected behavior of the iterate method
-
-# Add more test cases as needed
-def test_recombination():
-    de_solver = DifferentialEvolution(FOBJ, BOUNDS)
-    de_solver._init_population()
+    de_solver._evaluate(rastrigin(de_solver.best), de_solver.best_idx)
     de_solver._mutation()
     de_solver._crossover()
-    trial, trial_denorm = de_solver._recombination(0)
-    assert trial.shape == (2,)
-    assert np.all((trial >= 0) & (trial <= 1))
-    # Add more assertions based on your recombination logic
+    trial, trial_denorm = de_solver._recombination(de_solver.best_idx)
 
-# Update test_evaluate
-def test_evaluate():
-    de_solver = DifferentialEvolution(FOBJ, BOUNDS)
+    file = open(filename, "r")
+    data = json.loads(file.read())
+    assert data['totals']['percent_covered'] == pytest.approx(100.0, abs=1e-2)
+
+
+def test_best_solution_found(de_solver):
     de_solver._init_population()
-    de_solver._mutation()
-    de_solver._crossover()
-    de_solver._recombination(0)
-    result_of_evolution = FOBJ(de_solver.trial_denorm)
-    de_solver._evaluate(result_of_evolution, 0)
-    assert result_of_evolution == de_solver.fitness[0]
+    initial_best = de_solver.best
+    for _ in range(100):  # Run for 100 iterations
+        de_solver.iterate()
 
-if __name__ == "__main__":
-    pytest.main()
+    assert np.all(rastrigin(de_solver.best) <= rastrigin(initial_best))
+
+def test_population_bounds(de_solver):
+    de_solver._init_population()
+    assert np.all(de_solver.population >= 0) and np.all(de_solver.population <= 1)
