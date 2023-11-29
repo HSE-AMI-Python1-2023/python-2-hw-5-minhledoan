@@ -27,7 +27,10 @@ def test_init_population(de_solver):
 def test_mutation(de_solver):
     de_solver._init_population()
     for idx in range(de_solver.population_size):
-        assert np.shape(de_solver._mutation()) == (de_solver.dimensions,)
+        de_solver.idxs = [i for i in range(de_solver.population_size) if i != idx]
+        mutant = de_solver._mutation()
+        assert mutant.shape == (de_solver.dimensions,)
+
 
 def test_crossover(de_solver):
     de_solver._init_population()
