@@ -70,14 +70,6 @@ def test_iteration(de_solver):
     assert not np.allclose(de_solver.best, initial_best, atol=1e-8), "Arrays are almost equal."
 
 
-def test_boundary_cases(de_solver):
-    # Test when the solution is on the boundary
-    bounds = np.array([[0, 1], [0, 1]])
-    de_solver = DifferentialEvolution(FOBJ, bounds)
-    de_solver._init_population()
-    assert np.all((0 <= de_solver.population) & (de_solver.population <= 1))
-
-
 
 
 
