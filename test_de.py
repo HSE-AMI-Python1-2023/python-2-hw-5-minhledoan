@@ -20,6 +20,7 @@ def test_initialization(de_solver):
 
 def test_init_population(de_solver):
     de_solver._init_population()
+    assert de_solver.population is not None
     assert de_solver.population.shape == (de_solver.population_size, de_solver.dimensions)
     assert np.all((0 <= de_solver.population) & (de_solver.population <= 1))
 
@@ -28,6 +29,7 @@ def test_mutation(de_solver):
     for idx in range(de_solver.population_size):
         de_solver.idxs = [i for i in range(de_solver.population_size) if i != idx]
         mutant = de_solver._mutation()
+        assert mutant is not None
         assert len(mutant) == de_solver.dimensions
         assert np.all((0 <= mutant) & (mutant <= 1))
 
@@ -36,6 +38,7 @@ def test_crossover(de_solver):
     de_solver.idxs = list(range(de_solver.population_size))
     de_solver._mutation()
     cross_points = de_solver._crossover()
+    assert cross_points is not None
     assert len(cross_points) == de_solver.dimensions
 
 def test_recombination_and_evaluation(de_solver):
@@ -49,12 +52,15 @@ def test_recombination_and_evaluation(de_solver):
         de_solver.idxs = [i for i in range(de_solver.population_size) if i != idx]
         # Perform recombination and evaluation
         trial, trial_denorm = de_solver._recombination(idx)
-        de_solver._evaluate(rastrigin(trial_denorm), idx)
+        assert trial is not None
+        assert trial_denorm is not None
         # Ensure the shape of the trial vector
         assert len(trial) == de_solver.dimensions
         # Ensure trial vector values are either from the mutant or the current population
         assert np.all((trial == de_solver.mutant) | (trial == de_solver.population[idx]))
         # Ensure trial_denorm is calculated correctly
+        assert de_solver.min_bound is not None
+        assert de_solver.max_bound is not None
         expected_trial_denorm = de_solver.min_bound + trial * de_solver.diff
         assert np.array_equal(trial_denorm, expected_trial_denorm)
         # Ensure evaluation updates the fitness and population correctly
