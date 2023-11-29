@@ -59,4 +59,4 @@ def test_iteration(de_solver):
     de_solver.iterate()
     assert de_solver.best is not None
     assert np.linalg.norm(de_solver.best - initial_best) > 1e-6, "Arrays are too close."
-
+##
