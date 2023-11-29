@@ -28,7 +28,6 @@ def test_mutation(de_solver):
         mutant = de_solver._mutation()
         assert len(mutant) == de_solver.dimensions
         assert np.all((mutant >= 0) & (mutant <= 1))
-        # Add more mutation tests as needed
 
 def test_crossover(de_solver):
     de_solver._init_population()
