@@ -27,9 +27,7 @@ def test_init_population(de_solver):
 def test_mutation(de_solver):
     de_solver._init_population()
     for idx in range(de_solver.population_size):
-        de_solver.idxs = [i for i in range(de_solver.population_size) if i != idx]
-        mutant = de_solver._mutation()
-        assert mutant.shape == (de_solver.dimensions,)
+        assert np.shape(de_solver._mutation()) == (de_solver.dimensions,)
 
 
 def test_crossover(de_solver):
@@ -39,15 +37,17 @@ def test_crossover(de_solver):
     cross_points = de_solver._crossover()
     assert cross_points.shape == (de_solver.dimensions,)
 
-def test_recombination_and_evaluation(de_solver):
+
+def test_recombination_and_evaluation(de_solver, FOBJ):
     de_solver._init_population()
     for idx in range(de_solver.population_size):
         de_solver.idxs = [i for i in range(de_solver.population_size) if i != idx]
         de_solver._mutation()
         de_solver._crossover()
         trial, trial_denorm = de_solver._recombination(idx)
-        assert trial.shape == (de_solver.dimensions,)
-        de_solver._evaluate(FOBJ(trial_denorm), idx)
+        assert np.shape(trial) == (de_solver.dimensions,)
+        result_of_evolution = FOBJ(trial_denorm)
+        de_solver._evaluate(result_of_evolution, idx)
 
 
 def test_iteration(de_solver):
