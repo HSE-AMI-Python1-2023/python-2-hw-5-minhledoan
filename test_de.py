@@ -47,9 +47,13 @@ def test_recombination_and_evaluation(de_solver):
         assert trial.shape == (de_solver.dimensions,)
         de_solver._evaluate(FOBJ(trial_denorm), idx)
 
+
 def test_iteration(de_solver):
     de_solver._init_population()
-    initial_best = de_solver.best.copy()
+    initial_best_value = de_solver._evaluate(de_solver._objective_function(de_solver.best), 0)
+
     de_solver.iterate()
     assert de_solver.best is not None
-    assert not np.allclose(de_solver.best, initial_best, atol=1e-8), "Arrays are almost equal."
+
+    new_best_value = de_solver._evaluate(de_solver._objective_function(de_solver.best), 0)
+    assert new_best_value < initial_best_value, "New best solution does not improve the objective function value."
