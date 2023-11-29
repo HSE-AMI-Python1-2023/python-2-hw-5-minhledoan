@@ -38,17 +38,18 @@ def test_crossover(de_solver):
     assert cross_points.shape == (de_solver.dimensions,)
 
 
-def test_recombination_and_evaluation(de_solver, FOBJ):
+def test_recombination_and_evaluation(de_solver):
     de_solver._init_population()
     for idx in range(de_solver.population_size):
         de_solver.idxs = [i for i in range(de_solver.population_size) if i != idx]
+        # Perform mutation, crossover, and recombination
         de_solver._mutation()
         de_solver._crossover()
         trial, trial_denorm = de_solver._recombination(idx)
-        assert np.shape(trial) == (de_solver.dimensions,)
-        result_of_evolution = FOBJ(trial_denorm)
-        de_solver._evaluate(result_of_evolution, idx)
-
+        # Ensure the shape of the trial vector
+        assert len(trial) == de_solver.dimensions
+        # Evaluate the trial and update the population if necessary
+        de_solver._evaluate(rastrigin(trial_denorm), idx)
 
 def test_iteration(de_solver):
     de_solver._init_population()
