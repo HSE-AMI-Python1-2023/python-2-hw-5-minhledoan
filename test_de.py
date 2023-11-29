@@ -56,4 +56,3 @@ def test_iteration(de_solver):
     assert de_solver.best is not None
     assert np.any(de_solver.best != initial_best)
 
-

@@ -110,7 +110,6 @@ class DifferentialEvolution:
                     f"bounds {formatted_bounds}, mutation coefficient {self.mutation_coefficient}, "
                     f"crossover coefficient {self.crossover_coefficient}")
 
-    # ... (unchanged)
 
 if __name__ == "__main__":
     setup_logging()
