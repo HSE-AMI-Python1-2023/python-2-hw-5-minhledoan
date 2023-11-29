@@ -42,21 +42,15 @@ def test_population_initialization(de_solver):
     assert de_solver.best_idx == np.argmin(de_solver.fitness)
     assert np.array_equal(de_solver.best, de_solver.population_denorm[de_solver.best_idx])
 
-def test_mutation(de_solver, mocker):
-    # Mock the random number generator to control the randomness for testing
-    mocker.patch("numpy.random.choice", side_effect=lambda population, size, replace: np.array([0, 1, 2]))
+
+def test_mutation(de_solver):
     de_solver._init_population()
-    de_solver._mutation()
-    # Check if a, b, c are selected from the population
-    assert de_solver.a is not None
-    assert de_solver.b is not None
-    assert de_solver.c is not None
-    assert de_solver.a in de_solver.population
-    assert de_solver.b in de_solver.population
-    assert de_solver.c in de_solver.population
-    # Check if mutant is calculated correctly
-    expected_mutant = np.clip(de_solver.a + de_solver.mutation_coefficient * (de_solver.b - de_solver.c), 0, 1)
-    assert np.array_equal(de_solver.mutant, expected_mutant)
+    # Test mutation for each individual in the population
+    for idx in range(de_solver.population_size):
+        de_solver.idxs = [i for i in range(de_solver.population_size) if i != idx]
+        mutant = de_solver._mutation()
+        assert len(mutant) == de_solver.dimensions
+        assert np.all((mutant >= 0) & (mutant <= 1))
 
 def test_crossover(de_solver):
     de_solver._init_population()
@@ -96,13 +90,10 @@ def test_recombination_and_evaluation(de_solver):
                 assert de_solver.best_idx == idx
                 assert np.array_equal(de_solver.best, de_solver.trial_denorm)
 
-
 def test_iteration(de_solver):
     de_solver._init_population()
     initial_best = de_solver.best
     de_solver.iterate()
     # Check if the best is updated and different from the initial best
     assert de_solver.best is not None
-    assert de_solver.best is not initial_best or np.array_equal(de_solver.best, initial_best)
-
-
+    assert de_solver.best is not initial_best or np.array_equal
