@@ -58,4 +58,5 @@ def test_iteration(de_solver):
     initial_best = de_solver.best.copy()
     de_solver.iterate()
     assert de_solver.best is not None
-    assert not np.allclose(de_solver.best, initial_best, atol=1e-8), "Arrays are almost equal."
+    assert np.linalg.norm(de_solver.best - initial_best) > 1e-6, "Arrays are too close."
+
