@@ -68,7 +68,7 @@ def test_iteration(de_solver):
     de_solver.iterate()
     assert de_solver.best is not None
     assert not np.allclose(de_solver.best, initial_best, atol=1e-8), "Arrays are almost equal."
-
+##
 
 
 
