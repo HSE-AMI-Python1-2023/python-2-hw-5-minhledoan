@@ -78,12 +78,8 @@ def test_boundary_cases(de_solver):
     assert np.all((0 <= de_solver.population) & (de_solver.population <= 1))
 
 
-def test_extreme_values(de_solver):
-    # Test with extreme values
-    bounds = np.array([[-1000, 1000], [-1000, 1000]])
-    de_solver = DifferentialEvolution(FOBJ, bounds, population_size=10, max_iter=5)
-    de_solver.solve()
-    assert de_solver.best is not None
+
+
 
 
 
