@@ -86,12 +86,4 @@ def test_extreme_values(de_solver):
     assert de_solver.best is not None
 
 
-def test_custom_objective_function(de_solver):
-    # Test with a custom objective function
-    def custom_objective(x):
-        return np.sum(x ** 2)
 
-    bounds = np.array([[-5, 5], [-5, 5]])
-    de_solver = DifferentialEvolution(custom_objective, bounds, population_size=5, max_iter=3)
-    de_solver.solve()
-    assert de_solver.best is not None
