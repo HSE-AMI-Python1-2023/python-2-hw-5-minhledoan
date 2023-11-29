@@ -26,7 +26,6 @@ def test_init_population(de_solver):
 
 def test_mutation(de_solver):
     de_solver._init_population()
-
     for idx in range(de_solver.population_size):
         assert np.shape(de_solver._mutation()) == (de_solver.dimensions,)
 
