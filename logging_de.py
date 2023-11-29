@@ -1,21 +1,23 @@
 import logging
 import numpy as np
 from logging.handlers import RotatingFileHandler
+from datetime import datetime
 
-def setup_logging():
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+def format_bound(bound):
+    return "[" + " ".join(f"[{', '.join(map(str, row))}]" for row in bound) + "]"
 
-    logger = logging.getLogger('Normal_logger')
-    logger.setLevel(logging.INFO)
-    file_handler = RotatingFileHandler('logging_de.log', mode='w')
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
+formatter = formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+normal_logger = logging.getLogger('Normal_logger')
+normal_logger.setLevel(logging.INFO)
+file_handler = RotatingFileHandler('logging_de.log', mode='w')
+file_handler.setFormatter(formatter)
+normal_logger.addHandler(file_handler)
 
-    error_logger = logging.getLogger('Error_logger')
-    error_logger.setLevel(logging.ERROR)
-    error_file_handler = RotatingFileHandler('errors.log', mode='w')
-    error_file_handler.setFormatter(formatter)
-    error_logger.addHandler(error_file_handler)
+error_logger = logging.getLogger('Error_logger')
+error_logger.setLevel(logging.ERROR)
+error_file_handler = RotatingFileHandler('errors.log', mode='w')
+error_file_handler.setFormatter(formatter)
+error_logger.addHandler(error_file_handler)
 
 class DifferentialEvolution:
     def __init__(self, fobj, bounds, mutation_coefficient=0.8, crossover_coefficient=0.7, population_size=20):
@@ -77,6 +79,17 @@ class DifferentialEvolution:
             if result_of_evolution < self.fitness[self.best_idx]:
                 self.best_idx = population_index
                 self.best = self.trial_denorm
+            if result_of_evolution > 1e-3:
+                formatted_bounds = format_bound(self.bounds)
+                error_logger.error(
+                    f"Result: {result_of_evolution} exceeds 1e-3. \nParameters: population size {self.population_size}, "
+                    f"bounds {formatted_bounds}, mutation coefficient {self.mutation_coefficient}, "
+                    f"crossover coefficient {self.crossover_coefficient}")
+                if result_of_evolution > 1e-1:
+                    error_logger.critical(
+                        f"Result: {result_of_evolution} exceeds 1e-1. \nParameters: population size {self.population_size}, "
+                        f"bounds {formatted_bounds}, mutation coefficient {self.mutation_coefficient}, "
+                        f"crossover coefficient {self.crossover_coefficient}")
 
     def iterate(self):
 
@@ -93,27 +106,14 @@ class DifferentialEvolution:
             self._evaluate(result_of_evolution, population_index)
 
 
-    def rastrigin(array, A=10):
-        return A * 2 + (array[0] ** 2 - A * np.cos(2 * np.pi * array[0])) + (
-                array[1] ** 2 - A * np.cos(2 * np.pi * array[1]))
-
-    def _evaluate(self, result_of_evolution, population_index):
-        if result_of_evolution > 1e-3:
-            formatted_bounds = format_bounds(self.bounds)
-            error_logger.error(
-                f"Result: {result_of_evolution} exceeds 1e-3. \nParameters: population size {self.population_size}, "
-                f"bounds {formatted_bounds}, mutation coefficient {self.mutation_coefficient}, "
-                f"crossover coefficient {self.crossover_coefficient}")
-            if result_of_evolution > 1e-1:
-                error_logger.critical(
-                    f"Result: {result_of_evolution} exceeds 1e-1. \nParameters: population size {self.population_size}, "
-                    f"bounds {formatted_bounds}, mutation coefficient {self.mutation_coefficient}, "
-                    f"crossover coefficient {self.crossover_coefficient}")
+def rastrigin(array, A=10):
+    return A * 2 + (array[0] ** 2 - A * np.cos(2 * np.pi * array[0])) + (
+            array[1] ** 2 - A * np.cos(2 * np.pi * array[1]))
 
 
 if __name__ == "__main__":
-    setup_logging()
     function_obj = rastrigin
+
     bounds_array = np.array([[-20, 20], [-20, 20]]), np.array([[-10, 50], [-10, 60]]), np.array([[-0, 110], [-42, 32]])
     steps_array = [40, 100, 200]
     mutation_coefficient_array = [0.5, 0.6, 0.3]
@@ -133,5 +133,10 @@ if __name__ == "__main__":
 
                         de_solver._init_population()
 
+                        formatted_bounds = format_bound(bounds)
+                        normal_logger.info(
+                            f"Population size: {population_size}, bounds: {formatted_bounds}, mutation coefficient: {mutation_coefficient}, \n"
+                            f"Crossover coefficient: {crossover_coefficient}, steps: {steps}, initial population: {de_solver.population_denorm} "
+                        )
                         for _ in range(steps):
                             de_solver.iterate()

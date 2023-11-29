@@ -14,7 +14,7 @@ FOBJ = rastrigin
 def de_solver():
     return DifferentialEvolution(FOBJ, BOUNDS)
 
-def test_initialization(de_solver):
+def test_initial(de_solver):
     assert de_solver.population_size > 0
     assert de_solver.dimensions == 2
 
@@ -23,12 +23,12 @@ def test_init_population(de_solver):
     assert de_solver.population.shape == (de_solver.population_size, de_solver.dimensions)
     assert np.all((0 <= de_solver.population) & (de_solver.population <= 1))
 
+
 def test_mutation(de_solver):
     de_solver._init_population()
+
     for idx in range(de_solver.population_size):
-        de_solver.idxs = [i for i in range(de_solver.population_size) if i != idx]
-        mutant = de_solver._mutation()
-        assert mutant.shape == (de_solver.dimensions,)
+        assert np.shape(de_solver._mutation()) == (de_solver.dimensions,)
 
 def test_crossover(de_solver):
     de_solver._init_population()
