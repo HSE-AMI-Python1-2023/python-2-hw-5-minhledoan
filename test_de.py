@@ -50,10 +50,11 @@ def test_recombination_and_evaluation(de_solver):
 
 def test_iteration(de_solver):
     de_solver._init_population()
-    initial_best_value = de_solver._evaluate(de_solver._objective_function(de_solver.best), 0)
+    initial_best_value = FOBJ(de_solver.best)
 
     de_solver.iterate()
     assert de_solver.best is not None
 
-    new_best_value = de_solver._evaluate(de_solver._objective_function(de_solver.best), 0)
+    new_best_value = FOBJ(de_solver.best)
     assert new_best_value < initial_best_value, "New best solution does not improve the objective function value."
+
